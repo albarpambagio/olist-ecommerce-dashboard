@@ -143,7 +143,6 @@ python sql/phase6_advanced.py
 - Import: `fact_orders`, `dim_date`, `dim_product`, `dim_customer`, `dim_seller`
 
 ### 5. DAX Measures
-See [docs/dashboard_guide.md](docs/dashboard_guide.md) for all DAX measures and dashboard build instructions.
 
 ---
 
