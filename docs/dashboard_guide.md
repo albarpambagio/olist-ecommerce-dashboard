@@ -72,30 +72,26 @@ VAR total_reviews = COUNTROWS(FILTER(fact_orders, NOT(ISBLANK(fact_orders[review
 RETURN DIVIDE(five_star, total_reviews)
 ```
 
-## Dynamic Date Table (DAX)
+## Date Table (Already in PostgreSQL!)
 
-Create this as a calculated table in Power BI:
+**You already have `dim_date` in PostgreSQL** with all needed columns:
+- `date_key`, `year`, `quarter`, `year_month`, `month`, `month_name`, `week_num`, `day_of_week`, `is_weekend`
 
-```dax
-DateTable =
-VAR StartDate = DATE(2016, 1, 1)
-VAR EndDate = DATE(2019, 12, 31)
-RETURN
-ADDCOLUMNS(
-    CALENDAR(StartDate, EndDate),
-    "Year", YEAR([Date]),
-    "Quarter", "Q" & QUARTER([Date]),
-    "Month Number", MONTH([Date]),
-    "Month Name", FORMAT([Date], "MMMM"),
-    "Month Short", FORMAT([Date], "MMM"),
-    "Year-Month", FORMAT([Date], "YYYY-MM"),
-    "Week Number", WEEKNUM([Date]),
-    "Day of Week", FORMAT([Date], "dddd"),
-    "Is Weekend", IF(WEEKDAY([Date], 2) >= 6, TRUE, FALSE)
-)
-```
+### In Power BI:
+1. **Use the existing `dim_date`** from PostgreSQL (already in your model)
+2. **Mark it as a Date Table**: 
+   - Go to **Table View** → select `dim_date` table
+   - Click **Mark as Date Table** (ribbon) → select `date_key` column
+3. **That's it!** No need to create a DAX DateTable.
 
-Mark it as a Date Table: Right-click → Mark as Date Table → select `[Date]` column.
+### Why Skip the DAX DateTable?
+- ✅ `dim_date` is already loaded and has all columns
+- ✅ Relationship `fact_orders[order_date]` → `dim_date[date_key]` already set
+- ✅ Power BI time intelligence works with `dim_date` once marked as Date Table
+- ✅ Consistent with your star schema (single source of truth)
+
+### If You Need DAX Time Intelligence Without Marking:
+Some DAX functions (like `SAMEPERIODLASTYEAR`) require a marked date table. If you get errors, then create the DAX DateTable as a supplement (not replacement).
 
 ## Dashboard Pages Structure
 
