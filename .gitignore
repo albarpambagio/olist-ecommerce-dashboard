@@ -16,3 +16,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Interview prep (private)
+INTERVIEW_TALKING_POINTS.md

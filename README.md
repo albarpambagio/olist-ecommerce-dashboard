@@ -167,19 +167,6 @@ Licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4
 
 ---
 
-## Interview Talking Points
-
-| Question | Key Points |
-|---|---|
-| "Walk me through this project" | Business question → data model → KPIs → insights → recommendations |
-| "Why did you use a star schema?" | Optimized for slice-and-dice; separates facts from dimensions; faster aggregation in Power BI |
-| "What was the hardest data challenge?" | Geolocation deduplication, null delivery dates, Portuguese categories, repeat customer identification |
-| "What did you find?" | 7.78% late rate concentrated in key states; 3% repeat rate = opportunity; books category has highest satisfaction |
-| "What would you do differently?" | Add real-time data pipeline, forecasting model, or segment sellers using RFM |
-| "What do recommendations mean for business?" | Tie each insight to revenue impact: late deliveries → churn risk; low repeat rate → LTV opportunity |
-
----
-
 ## Author
 
 **Albar Pambagio**  
