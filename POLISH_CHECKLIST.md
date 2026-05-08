@@ -1,5 +1,20 @@
 # Phase 8: Polish & Packaging Checklist
 
+## Integration Plan Status (Completed 2026-05-08)
+
+- [x] README rewritten with 5 sections (Background, Data Structure, Executive Summary, Insights Deep Dive, Recommendations)
+- [x] CLEAN Framework formalized in `logs/phase2_cleaning_eda.log.md`
+- [x] SCAN Framework + North Star added to `logs/insights.md`
+- [x] DASH Framework documented in `docs/dash_framework.md` (new)
+- [x] README Recommendations categorized (Market Context, Areas for Investigation, Actionable)
+- [x] Framework structure integrated without explicit naming in portfolio README
+- [x] North Star Metrics section added to `README.md`
+- [x] Metrics by Stakeholder Team table added to `README.md`
+- [x] Sales Mix concept added to `README.md` Insights Deep Dive
+- [x] Sales Mix SQL added to `sql/phase4_kpis.py` (kpi_sales_mix view)
+- [x] Metrics prioritization added to `logs/insights.md`
+- [x] Sales Mix added to `docs/dash_framework.md`
+
 ## Dashboard Design Checklist
 
 - [x] Consistent color palette across all pages (pick 2-3 colors max)
@@ -14,26 +29,12 @@
 
 ## GitHub Repo Checklist
 
-- [x] README.md structured as stakeholder report (see Phase 7)
+- [x] README.md structured as stakeholder report (5 sections)
 - [x] `/sql/` folder with all SQL scripts (fact table, dimensions, RFM, cohort)
-- [ ] `/screenshots/` folder with dashboard page images
-- [x] `.pbix` file referenced (or note that it's available on request)
+- [ ] `/screenshots/` folder with dashboard page images (POWER BI — BY USER)
+- [ ] `.pbix` file available (POWER BI — BY USER)
 - [x] Data source clearly credited (Olist via Kaggle)
 - [x] Insights visible within 1 click of landing on the repo
-
-## Power BI File
-
-- [ ] Save `.pbix` file as `olist_dashboard.pbix`
-- [ ] Place in repo root or `/dashboards/` folder
-- [ ] Update README with link to download/see screenshots
-
-## Final Steps
-
-1. Build dashboard in Power BI Desktop using `docs/dashboard_guide.md`
-2. Take screenshots of all 5 pages
-3. Save to `/screenshots/` folder
-4. Update README with screenshots
-5. Commit and push final version
 
 ## Portfolio Ready Checklist
 
@@ -43,10 +44,9 @@
 - [x] Cohort retention analysis working
 - [x] KPIs defined with formulas
 - [x] DAX measures documented
-- [x] README tells a story (not just lists files)
-- [ ] Dashboard screenshots added
-- [ ] `.pbix` file available
+- [x] README tells a story (5 sections, insights categorized)
+- [ ] Dashboard screenshots added (POWER BI — BY USER)
+- [ ] `.pbix` file available (POWER BI — BY USER)
 
 ---
-
-**Status:** Ready for dashboard build and final screenshots!
+**Status:** Integration complete. Power BI screenshots/.pbix by user to finalize.

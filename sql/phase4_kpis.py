@@ -110,9 +110,42 @@ def create_kpi_views():
     conn.commit()
     print("   kpi_seller_performance created")
     
+    # KPI View 5: Sales Mix (Absolute + % of Total by Category)
+    print("\n6. Creating KPI: Sales Mix...")
+    cur.execute("""
+        CREATE VIEW olist.kpi_sales_mix AS
+        WITH category_revenue AS (
+            SELECT 
+                DATE_TRUNC('month', fo.order_date) AS month,
+                dp.category_en,
+                SUM(fo.revenue) AS category_revenue
+            FROM olist.fact_orders fo
+            JOIN olist.dim_product dp USING (product_id)
+            GROUP BY 1, 2
+        ),
+        total_revenue AS (
+            SELECT 
+                month,
+                SUM(category_revenue) AS total_revenue
+            FROM category_revenue
+            GROUP BY 1
+        )
+        SELECT 
+            cr.month,
+            cr.category_en,
+            cr.category_revenue,
+            tr.total_revenue,
+            ROUND(cr.category_revenue::NUMERIC / tr.total_revenue * 100, 2) AS pct_of_total
+        FROM category_revenue cr
+        JOIN total_revenue tr USING (month)
+        ORDER BY cr.month, cr.category_revenue DESC
+    """)
+    conn.commit()
+    print("   kpi_sales_mix created")
+    
     cur.close()
     conn.close()
-
+ 
 def verify_kpis():
     conn = psycopg2.connect(
         host=DB_HOST,
@@ -158,6 +191,21 @@ def verify_kpis():
     """)
     for row in cur.fetchall():
         print(f"   {row[0]}: {row[1]:,} orders, ${row[2]:,.2f} revenue, AOV: ${row[3]:.2f}")
+    
+    # Sales Mix verification
+    print("\n3. Sales Mix (sample - top categories in recent month):")
+    cur.execute("""
+        SELECT 
+            category_en,
+            ROUND(category_revenue::NUMERIC, 2) AS revenue,
+            pct_of_total
+        FROM olist.kpi_sales_mix
+        WHERE month = (SELECT MAX(month) FROM olist.kpi_sales_mix)
+        ORDER BY category_revenue DESC
+        LIMIT 5
+    """)
+    for row in cur.fetchall():
+        print(f"   {row[0]}: ${row[1]:,.2f} ({row[2]}% of total)")
     
     cur.close()
     conn.close()

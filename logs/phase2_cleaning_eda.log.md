@@ -2,6 +2,42 @@
 
 ## Date: 2026-05-07
 
+## CLEAN Framework Applied
+
+### C — Conceptualize the Data
+- **Grain:** One row = one order item (112,650 rows in `olist_order_items`)
+- **Key Metrics:** revenue (price), freight_value, review_score
+- **Key Dimensions:** customer_state, product_category_en, seller_state, order_date
+- **Example Record:** "Customer X placed an order on 2017-05-12 for a books_general_interest product at $45.99 via credit_card, delivered in 9 days."
+
+### L — Locate Solvable Issues
+| Issue | Resolution | % Affected | SQL Used |
+|-------|-------------|-------------|----------|
+| Geolocation duplicates (~3k rows with same zip prefix) | Created `olist.geo_deduped` view using AVG(lat/lng) | ~3% | `CREATE VIEW olist.geo_deduped AS SELECT zip_code_prefix, AVG(geolocation_lat) AS lat, AVG(geolocation_lng) AS lng, MAX(geolocation_city) AS city, MAX(geolocation_state) AS state FROM olist.geolocation GROUP BY zip_code_prefix;` |
+| Null delivery dates (2,965 orders) | Excluded from delivery KPIs, tracked separately | 3% | `WHERE order_delivered_customer_date IS NOT NULL` |
+| Portuguese category names | JOINed `category_translation` table, COALESCE for missing | ~15 categories | `LEFT JOIN olist.category_translation t ON p.product_category_name = t.string_field_0` |
+| Initial repeat customer rate = 0% | Fixed by using `customer_unique_id` instead of `customer_id` | 100% of calculation | `JOIN olist.customers c ON o.customer_id = c.customer_id` |
+
+### E — Evaluate Unsolvable Issues
+| Issue | Impact | Decision |
+|-------|--------|----------|
+| Missing translations for some categories | Confusing labels | COALESCE to 'unknown', documented |
+| 209-day delivery outlier | Skews avg delivery days | Flagged, not removed (<0.1% of orders) |
+| Orders with `order_status` = 'cancelled' or 'unavailable' | Affects revenue KPIs | Excluded from revenue calculations, tracked in `is_valid_order` flag |
+
+### A — Augment the Data
+- Added date grains: `year`, `quarter`, `year_month`, `month`, `week_num` in `dim_date`
+- Added flags: `is_late` (delivery > estimated), `is_repeat_customer` (frequency > 1)
+- Added calculated metric: `actual_delivery_days` (delivered_customer_date - purchase_timestamp)
+- Enriched dimensions: English category names via `dim_product`
+
+### N — Note and Document
+- Full issues log maintained in `logs/insights.md`
+- All SQL scripts in `/sql/` folder with comments
+- Data quality checklist completed before EDA
+
+---
+
 ### 2.1 Data Quality Fixes
 
 ```sql

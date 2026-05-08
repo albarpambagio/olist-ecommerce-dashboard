@@ -26,6 +26,90 @@ SELECT
 
 ---
 
+## SCAN Framework: Exploratory Analysis
+
+### Metrics in the Insights Log
+
+For each finding, document using this structured format (per updated Playbook Section 4):
+
+| Metric | Dimension | Finding | Team | Type |
+|--------|-----------|---------|------|------|
+| Revenue | Product Category | Books categories have 4.3+ stars, high satisfaction | Product | Directional |
+| Repeat Rate | Customer Segment | At Risk = 24.1% of base, need re-engagement | Marketing | Actionable |
+| Late Delivery Rate | State | 7.78% overall, varies by region (some states >10%) | Operations | Actionable |
+| AOV | State | PB has 2× AOV ($266.61), premium market opportunity | Marketing | Directional |
+| Revenue | Time (Month) | Q4 consistently strongest (seasonality pattern) | Finance | Contextual |
+| Review Score | Product Category | books_general_interest highest (4.45), food_drink (4.32) | Product | Actionable |
+| Payment Type | Customer | 73.6% credit card, 19.0% boleto | Marketing | Directional |
+
+### Metrics to Prioritize vs. Ignore
+
+**Prioritize (included in dashboard):**
+- Revenue, Order Volume, AOV (represent 100% of total revenue)
+- On-Time Delivery Rate (directly influenceable by Operations)
+- Repeat Customer Rate (directly influenceable by Marketing)
+- Review Score by Category (actionable for Product team)
+
+**Deprioritize (excluded from executive dashboard):**
+- Headsets category (<2% of revenue, ~1,000 orders)
+- Seller-specific metrics on Executive page (belongs on Seller page only)
+- Payment method trends for Operations team (belongs to Marketing)
+- Geolocation details (technical, not decision-relevant)
+
+---
+
+### S — Stakeholder Goals
+- **Sales Team:** Revenue trends, category performance, market opportunities
+- **Ops Team:** Delivery performance, seller reliability, logistics bottlenecks
+- **Target Decision:** Monthly/quarterly resource allocation and strategy adjustments
+
+### C — Columns and Coverage
+- **Data Available:** 9 tables, ~100k orders, 2016–2018
+- **Can Answer:** Revenue trends, delivery performance, customer retention, seller quality
+- **Cannot Answer (Gaps):** Marketing channel attribution, customer acquisition source, profitability margins
+
+### A — Aggregates and Anomalies
+| Metric | Value | Insight |
+|--------|-------|---------|
+| Total Revenue | $13,168,332.11 | Baseline for growth calculations |
+| Avg Order Value | $137.41 | Typical transaction size |
+| On-Time Delivery Rate | 92.22% | 7.78% are late — operational bottleneck |
+| Repeat Customer Rate | 3.00% | Massive retention opportunity |
+| Avg Review Score | 4.08/5.00 | Generally satisfied customers |
+
+**Notable Patterns:**
+- SP/RJ/MG = 66% of customers (market concentration)
+- Q4 consistently strongest (seasonality)
+- 3% repeat rate is extremely low for e-commerce
+
+### N — Notable Segments
+- **At Risk customers:** 23,272 (24.1%) — need re-engagement
+- **Late deliveries:** 7,826 orders (7.78%) — concentrated in specific states
+- **Premium markets:** PB ($266.61 AOV), AC ($244.69), AP ($240.92)
+- **High-satisfaction categories:** books_general_interest (4.45), books_technical (4.37)
+
+---
+
+## North Star Deep Dive
+
+### North Star Metric: Total Revenue ($13.17M)
+### North Star Dimensions: Product Category, Customer State, Time
+
+#### Decomposition: Revenue = Order Volume × AOV
+- **Order Volume:** 95,832 delivered orders
+- **AOV:** $137.41
+- **Late Deliveries:** 7.78% (driving negative reviews in affected segments)
+
+#### Cross-Tabulation Findings:
+| Dimension Combination | Finding | Impact |
+|----------------------|---------|--------|
+| Product Category × Review Score | Books categories have 4.3+ stars | Cross-sell opportunity |
+| Customer State × AOV | PB/AC/AP have 2× AOV | Premium market expansion |
+| Seller State × Late Rate | Late deliveries vary by region | Ops bottleneck investigation |
+| Customer Segment × Frequency | 24.1% At Risk, only 3% repeat | Retention campaign priority |
+
+---
+
 ## Key Metrics
 
 | Metric | Value | Business Meaning |
