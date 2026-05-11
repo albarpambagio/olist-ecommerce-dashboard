@@ -6,8 +6,9 @@ Open: http://localhost:8050
 
 import pandas as pd
 import psycopg2
-from vizro import Dashboard, Page
-from vizro.models import Card, Graph
+from vizro.models import Card, Graph, Page, Dashboard
+from vizro.models.types import capture
+from vizro import Vizro
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -56,26 +57,28 @@ def load_all_data():
     """)
     
     at_risk = get_data("""
-        SELECT
-            CASE
-                WHEN recency_days BETWEEN 0 AND 30 THEN '0-30 days'
-                WHEN recency_days BETWEEN 31 AND 60 THEN '31-60 days'
-                WHEN recency_days BETWEEN 61 AND 90 THEN '61-90 days'
-                WHEN recency_days BETWEEN 91 AND 180 THEN '91-180 days'
-                ELSE '180+ days'
-            END AS recency_bucket,
-            COUNT(*) AS customers
-        FROM olist.customer_rfm
-        WHERE segment = 'At Risk'
-        GROUP BY 1
-        ORDER BY 
-            CASE recency_bucket
-                WHEN '0-30 days' THEN 1
-                WHEN '31-60 days' THEN 2
-                WHEN '61-90 days' THEN 3
-                WHEN '91-180 days' THEN 4
-                ELSE 5
-            END
+        SELECT recency_bucket, customers FROM (
+            SELECT
+                CASE
+                    WHEN recency_days BETWEEN 0 AND 30 THEN '0-30 days'
+                    WHEN recency_days BETWEEN 31 AND 60 THEN '31-60 days'
+                    WHEN recency_days BETWEEN 61 AND 90 THEN '61-90 days'
+                    WHEN recency_days BETWEEN 91 AND 180 THEN '91-180 days'
+                    ELSE '180+ days'
+                END AS recency_bucket,
+                CASE
+                    WHEN recency_days BETWEEN 0 AND 30 THEN 1
+                    WHEN recency_days BETWEEN 31 AND 60 THEN 2
+                    WHEN recency_days BETWEEN 61 AND 90 THEN 3
+                    WHEN recency_days BETWEEN 91 AND 180 THEN 4
+                    ELSE 5
+                END AS sort_order,
+                COUNT(*) AS customers
+            FROM olist.customer_rfm
+            WHERE segment = 'At Risk'
+            GROUP BY 1, 2
+        ) t
+        ORDER BY sort_order
     """)
     
     cohort = get_data("""
@@ -110,12 +113,10 @@ def load_all_data():
         "states": states
     }
 
-# Load data once at startup
 print("Loading data...")
 DATA = load_all_data()
 print("Data loaded successfully!")
 
-# Color mapping for segments
 SEGMENT_COLORS = {
     "At Risk": "#E85D04",
     "Loyal Customers": "#40916C",
@@ -125,26 +126,82 @@ SEGMENT_COLORS = {
     "Promising": "#74C69D"
 }
 
+monthly_data = DATA["monthly"].copy()
+monthly_data["month_str"] = pd.to_datetime(monthly_data["month"]).dt.strftime("%Y-%m")
+
+states_data = DATA["states"].head(8)
+rfm_data = DATA["rfm"]
+at_risk_data = DATA["at_risk"]
+cohort_data = DATA["cohort"]
+cohort_m1 = cohort_data[cohort_data["month_index"] > 0]
+metrics_data = DATA["metrics"]
+
+@capture("graph")
+def revenue_chart(data_frame):
+    return px.line(
+        data_frame, 
+        x="month_str", 
+        y="revenue",
+        title="Monthly Revenue Trend",
+        markers=True
+    ).update_layout(template="plotly_white", xaxis_title="Month", yaxis_title="Revenue (R$)")
+
+@capture("graph")
+def states_chart(data_frame):
+    return px.bar(
+        data_frame,
+        x="state",
+        y="customers",
+        title="Top States by Customer Count"
+    ).update_layout(template="plotly_white")
+
+@capture("graph")
+def rfm_chart(data_frame):
+    return px.bar(
+        data_frame,
+        x="segment",
+        y="customers",
+        color="segment",
+        title="Customer Segments by RFM Analysis",
+        color_discrete_map=SEGMENT_COLORS
+    ).update_layout(template="plotly_white", showlegend=False)
+
+@capture("graph")
+def cohort_chart(data_frame):
+    return px.scatter(
+        data_frame,
+        x="cohort_month",
+        y="retention_pct",
+        size="cohort_size",
+        color="month_index",
+        title="Retention Rate by Cohort (bubble size = cohort size)",
+        labels={"cohort_month": "Cohort Month", "retention_pct": "Retention %"}
+    ).update_layout(template="plotly_white")
+
+@capture("graph")
+def at_risk_chart(data_frame):
+    return px.bar(
+        data_frame,
+        x="recency_bucket",
+        y="customers",
+        title="At Risk Customers: Days Since Last Order",
+        color="customers",
+        color_continuous_scale="Reds"
+    ).update_layout(template="plotly_white")
+
 def create_executive_page():
     """Executive Overview Page."""
-    metrics = DATA["metrics"]
-    monthly = DATA["monthly"]
-    states = DATA["states"]
-    
-    # KPI Card
-    kpi_card = Card(
-        title="Key Metrics",
-        text=f"""
+    kpi_card = Card(text=f"""
 ## 📊 Olist Sales Performance
 
 ### Revenue
-**R${metrics.iloc[0]['total_revenue']:,.2f}**
+**R${metrics_data.iloc[0]['total_revenue']:,.2f}**
 
 ### Orders
-**{metrics.iloc[0]['total_orders']:,}**
+**{metrics_data.iloc[0]['total_orders']:,}**
 
 ### Average Order Value
-**R${metrics.iloc[0]['aov']:,.2f}**
+**R${metrics_data.iloc[0]['aov']:,.2f}**
 
 ---
 
@@ -154,59 +211,16 @@ def create_executive_page():
 - **M1 Retention:** ~0.5%
 
 *Retention is the biggest lever for revenue growth.*
-"""
-    )
-    
-    # Monthly revenue chart
-    monthly["month_str"] = pd.to_datetime(monthly["month"]).dt.strftime("%Y-%m")
-    fig_revenue = px.line(
-        monthly, 
-        x="month_str", 
-        y="revenue",
-        title="Monthly Revenue Trend",
-        markers=True
-    ).update_layout(
-        template="plotly_white",
-        xaxis_title="Month",
-        yaxis_title="Revenue (R$)"
-    )
-    graph_revenue = Graph(figure=fig_revenue)
-    
-    # States chart
-    fig_states = px.bar(
-        states.head(8),
-        x="state",
-        y="customers",
-        title="Top States by Customer Count"
-    ).update_layout(template="plotly_white")
-    graph_states = Graph(figure=fig_states)
+""")
     
     return Page(
-        name="Executive Overview",
-        components=[kpi_card, graph_revenue, graph_states]
+        title="Executive Overview",
+        components=[kpi_card, Graph(figure=revenue_chart(data_frame=monthly_data)), Graph(figure=states_chart(data_frame=states_data))]
     )
 
 def create_rfm_page():
     """RFM Segmentation Page."""
-    rfm = DATA["rfm"]
-    
-    # Segment chart with colors
-    fig_rfm = px.bar(
-        rfm,
-        x="segment",
-        y="customers",
-        color="segment",
-        title="Customer Segments by RFM Analysis",
-        color_discrete_map=SEGMENT_COLORS
-    ).update_layout(
-        template="plotly_white",
-        showlegend=False
-    )
-    graph_rfm = Graph(figure=fig_rfm)
-    
-    insight_card = Card(
-        title="Segment Insights",
-        text="""
+    insight_card = Card(text="""
 ## 🎯 What Each Segment Means
 
 ### 🔴 At Risk (24.1% - 23,272 customers)
@@ -231,37 +245,16 @@ Show potential. Nurture to become loyal customers.
 
 ## The Opportunity
 **24% of customers are At Risk** — targeting just 20% of them could generate R$500K+ in incremental revenue.
-"""
-    )
+""")
     
     return Page(
-        name="RFM Segmentation",
-        components=[graph_rfm, insight_card]
+        title="RFM Segmentation",
+        components=[Graph(figure=rfm_chart(data_frame=rfm_data)), insight_card]
     )
 
 def create_cohort_page():
     """Cohort Retention Page."""
-    cohort = DATA["cohort"]
-    
-    # Filter to show retention decline
-    cohort_m1 = cohort[cohort["month_index"] > 0]
-    
-    fig_cohort = px.scatter(
-        cohort_m1,
-        x="cohort_month",
-        y="retention_pct",
-        size="cohort_size",
-        color="month_index",
-        title="Retention Rate by Cohort (bubble size = cohort size)",
-        labels={"cohort_month": "Cohort Month", "retention_pct": "Retention %"}
-    ).update_layout(
-        template="plotly_white"
-    )
-    graph_cohort = Graph(figure=fig_cohort)
-    
-    insight_card = Card(
-        title="The Retention Problem",
-        text="""
+    insight_card = Card(text="""
 ## 📉 The Churn Crisis
 
 ### M1 Retention: ~0.5%
@@ -282,31 +275,16 @@ If Olist improves M1 retention from 0.5% to just 3%:
 2. **Post-purchase upsell** at checkout
 3. **Loyalty points** for second purchase
 4. **Personalized product recommendations**
-"""
-    )
+""")
     
     return Page(
-        name="Cohort Retention",
-        components=[graph_cohort, insight_card]
+        title="Cohort Retention",
+        components=[Graph(figure=cohort_chart(data_frame=cohort_m1)), insight_card]
     )
 
 def create_at_risk_page():
     """At Risk Deep Dive Page."""
-    at_risk = DATA["at_risk"]
-    
-    fig_at_risk = px.bar(
-        at_risk,
-        x="recency_bucket",
-        y="customers",
-        title="At Risk Customers: Days Since Last Order",
-        color="customers",
-        color_continuous_scale="Reds"
-    ).update_layout(template="plotly_white")
-    graph_at_risk = Graph(figure=fig_at_risk)
-    
-    opportunity_card = Card(
-        title="The Opportunity",
-        text="""
+    opportunity_card = Card(text="""
 ## 🎯 At Risk Customer Opportunity
 
 ### The Numbers
@@ -340,15 +318,13 @@ def create_at_risk_page():
 
 ### Priority
 Focus on customers who last purchased 60-90 days ago — they're most likely to respond.
-"""
-    )
+""")
     
     return Page(
-        name="At Risk Deep Dive",
-        components=[graph_at_risk, opportunity_card]
+        title="At Risk Deep Dive",
+        components=[Graph(figure=at_risk_chart(data_frame=at_risk_data)), opportunity_card]
     )
 
-# Build the dashboard
 dashboard = Dashboard(
     title="Olist Sales & Customer Analytics",
     pages=[
@@ -360,5 +336,4 @@ dashboard = Dashboard(
 )
 
 if __name__ == "__main__":
-    import vizro
-    vizro.run(dashboard, port=8050)
+    Vizro().build(dashboard).run(port=8050)
