@@ -1,4 +1,0 @@
-vizro
-pandas
-psycopg2-binary
-plotly

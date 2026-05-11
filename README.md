@@ -131,8 +131,8 @@ fact_orders (central)
 ```bash
 # Launch Vizro dashboard
 cd vizro_dashboard
-pip install -r requirements.txt
-python app.py
+uv sync
+uv run python app.py
 # Open http://localhost:8050
 ```
 
