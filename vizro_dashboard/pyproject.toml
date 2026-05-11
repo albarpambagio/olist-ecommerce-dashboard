@@ -10,4 +10,3 @@ dependencies = [
     "plotly",
 ]
 
-[tool.uv.lock]
